@@ -1,28 +1,26 @@
-import axios from 'axios';
-import https from 'https';
 import { NextApiRequest, NextApiResponse } from 'next';
+import ping from 'ping';
 
 async function Get(req: NextApiRequest, res: NextApiResponse) {
-  // Parse req.body as a AppItem
   const { url } = req.query;
-  const agent = new https.Agent({ rejectUnauthorized: false });
-  await axios
-    .get(url as string, { httpsAgent: agent, timeout: 2000 })
-    .then((response) => {
-      res.status(response.status).json(response.statusText);
-    })
-    .catch((error) => {
-      if (error.response) {
-        res.status(error.response.status).json(error.response.statusText);
-      } else if (error.code === 'ECONNABORTED') {
-        res.status(408).json('Request Timeout');
-      } else {
-        res.status(error.response ? error.response.status : 500).json('Server Error');
-      }
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({
+      statusCode: 400,
+      message: 'Invalid query parameters, please specify the url',
     });
-  // // Make a request to the URL
-  // const response = await axios.get(url);
-  // // Return the response
+  }
+  await ping.sys.probe(url, (isAlive: boolean) => {
+    if (!isAlive) {
+      return res.status(404).json({
+        statusCode: 500,
+        message: 'Host is not alive',
+      });
+    }
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'Host is alive',
+    });
+  });
 }
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {

@@ -1,5 +1,6 @@
 import { Indicator, Tooltip } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
 import { useConfigContext } from '../../../../config/provider';
@@ -15,11 +16,11 @@ export const AppPing = ({ app }: AppPingProps) => {
   const active =
     (config?.settings.customization.layout.enabledPing && app.network.enabledStatusChecker) ??
     false;
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ['ping', { id: app.id, name: app.name }],
     queryFn: async () => {
-      const response = await fetch(`/api/modules/ping?url=${encodeURI(app.url)}`);
-      const isOk = app.network.statusCodes.includes(response.status.toString());
+      const response = await axios.get(`/api/modules/ping?url=${encodeURI(app.url)}`);
+      const isOk = true;
       return {
         status: response.status,
         state: isOk ? 'online' : 'down',
@@ -44,7 +45,7 @@ export const AppPing = ({ app }: AppPingProps) => {
         withinPortal
         radius="lg"
         label={
-          isLoading
+          (isLoading || isFetching)
             ? t('states.loading')
             : isOnline
             ? t('states.online', { response: data.status })
@@ -53,7 +54,7 @@ export const AppPing = ({ app }: AppPingProps) => {
       >
         <Indicator
           size={15}
-          color={isLoading ? 'yellow' : isOnline ? 'green' : 'red'}
+          color={(isLoading || isFetching) ? 'yellow' : isOnline ? 'green' : 'red'}
           children={null}
         />
       </Tooltip>
